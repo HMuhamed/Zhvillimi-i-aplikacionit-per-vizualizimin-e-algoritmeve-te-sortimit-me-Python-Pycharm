@@ -1,33 +1,47 @@
+import tkinter as tk
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button
 
 class MergeSortVisualizer:
-    def __init__(self, on_back_callback=None):
-        self.arr = np.random.randint(1, 100, 10)
-        self.interval = 1.0  # Default execution speed
-        self.paused = False  # Flag to track pause/resume
-        self.fig, self.ax = plt.subplots()
-        self.text = self.fig.text(0.02, 0.02, "", fontsize=10, color="black")
+    def __init__(self, array_type="random", on_back_callback=None):
         self.on_back_callback = on_back_callback
+        self.paused = False
+        self.fig, self.ax = plt.subplots()
+        self.fig.canvas.manager.window.state('zoomed')  # Maximize window
+        self.text = self.fig.text(0.02, 0.02, "", fontsize=10, color="black")
+        self.interval = 1.0  # Default execution speed
 
+        if array_type == "random":
+            self.arr = np.random.randint(1, 100, np.random.randint(1, 21))
+            self.init_visualization()
+        elif array_type == "custom":
+            self.arr = []
+            self.get_custom_array()
+
+    def init_visualization(self):
         self.ax.set_title('Initial Array')
         self.plot_bars()
 
         # Add speed selection instructions to the plot
         self.speed_instructions = self.fig.text(0.5, 0.95,
-            "Press 1 for Slow speed\nPress 2 for Medium speed\nPress 3 for Fast speed",
-            ha='center', va='center', fontsize=10, color='blue')
+                                                "Press 1 for Slow speed\nPress 2 for Medium speed\nPress 3 for Fast speed",
+                                                ha='center', va='center', fontsize=10, color='blue')
 
         # Connect events for speed selection and pause/resume
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.speed_choice = 2  # Default speed (medium)
 
+        # Add "Back to Main Menu" button
+        back_button_ax = self.fig.add_axes([0.45, 0.01, 0.1, 0.06])  # Match padding from other visualizations
+        self.back_button = Button(back_button_ax, 'Back to Main Menu', color='#4CAF50', hovercolor='lightgreen')
+        self.back_button.on_clicked(self.on_back_clicked)
+
         self.run_algorithm()
 
     def plot_bars(self):
         self.ax.clear()
-        self.bars = self.ax.bar(range(len(self.arr)), self.arr, color='blue', align='center')
+        self.bars = self.ax.bar(range(len(self.arr)), self.arr, color='skyblue', align='center')  # Changed color to skyblue
         for bar in self.bars:
             height = bar.get_height()
             self.ax.text(bar.get_x() + bar.get_width() / 2., height + 1, '%d' % int(height), ha='center', va='bottom',
@@ -118,17 +132,17 @@ class MergeSortVisualizer:
     def visualize(self, l=None, r=None, merged=False, show_yellow=False):
         self.plot_bars()
 
-        colors = ['blue'] * len(self.arr)
+        colors = ['skyblue'] * len(self.arr)  # Adjusted to use skyblue color
         if l is not None and r is not None:
             if merged:
                 for i in range(l, r + 1):
-                    colors[i] = 'green'  # Highlighting the merged range in green
+                    colors[i] = 'lightgreen'  # Highlighting the merged range in lightgreen
             elif show_yellow:
                 for i in range(l, r + 1):
-                    colors[i] = 'yellow'  # Highlighting the range in yellow before merging
+                    colors[i] = 'gold'  # Highlighting the range in gold before merging
             else:
                 for i in range(l, r + 1):
-                    colors[i] = 'blue'  # Default color if not merged or showing yellow
+                    colors[i] = 'skyblue'  # Default color if not merged or showing yellow
 
         for bar, color in zip(self.bars, colors):
             bar.set_color(color)
@@ -146,17 +160,11 @@ class MergeSortVisualizer:
 
     def run_algorithm(self):
         plt.waitforbuttonpress()
-
         self.merge_sort(0, len(self.arr) - 1)
 
         self.ax.set_title('Sorted Array')
         self.text.set_text(f'Sorted Array: {self.arr}')
         self.fig.canvas.draw()
-
-        # Add "Back to Main" button
-        back_button_ax = self.fig.add_axes([0.45, 0.01, 0.1, 0.06])  # Match padding from other visualizations
-        back_button = Button(back_button_ax, 'Back to Main Menu', color='#4CAF50', hovercolor='lightgreen')
-        back_button.on_clicked(self.on_back_clicked)
 
         plt.show()
 
@@ -165,8 +173,71 @@ class MergeSortVisualizer:
         if self.on_back_callback:
             self.on_back_callback()
 
-def main(on_back_callback=None):
-    visualizer = MergeSortVisualizer(on_back_callback=on_back_callback)
+    def get_custom_array(self):
+        self.root = tk.Tk()
+        self.root.title("Enter Custom Array")
+        self.root.configure(bg="#e0f7fa")
+
+        self.center_window(self.root, 400, 300)
+
+        container = tk.Frame(self.root, bg="#e0f7fa")
+        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        label = tk.Label(container, text="Enter the length of the array:", font=("Helvetica", 14), bg="#e0f7fa", fg="#00796b")
+        label.pack(pady=(10, 10))
+
+        self.array_length_entry = tk.Entry(container, font=("Helvetica", 14), justify='center')
+        self.array_length_entry.pack(pady=(0, 20))
+
+        submit_button = tk.Button(container, text="Submit", command=self.submit_length, font=("Helvetica", 14), bg="#00796b", fg="white", activebackground="#004d40", activeforeground="white", width=10, height=1, bd=0, highlightthickness=0)
+        submit_button.pack(pady=(0, 20))
+
+        self.root.mainloop()
+
+    def submit_length(self):
+        array_length = int(self.array_length_entry.get())
+        self.arr = []
+
+        self.root.destroy()
+        self.root = tk.Tk()
+        self.root.title("Enter Custom Array Elements")
+        self.root.configure(bg="#e0f7fa")
+
+        self.center_window(self.root, 400, 300)
+
+        container = tk.Frame(self.root, bg="#e0f7fa")
+        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        label = tk.Label(container, text="Enter the elements of the array:", font=("Helvetica", 14), bg="#e0f7fa", fg="#00796b")
+        label.pack(pady=(10, 10))
+
+        self.entries = []
+        for i in range(array_length):
+            entry = tk.Entry(container, font=("Helvetica", 14), justify='center')
+            entry.pack(pady=(10, 10))  # Centered padding
+            self.entries.append(entry)
+
+        submit_button = tk.Button(container, text="Submit", command=self.submit_elements, font=("Helvetica", 14), bg="#00796b", fg="white", activebackground="#004d40", activeforeground="white", width=10, height=1, bd=0, highlightthickness=0)
+        submit_button.pack(pady=(20, 0))
+
+        self.root.mainloop()
+
+    def submit_elements(self):
+        for entry in self.entries:
+            if entry.get().strip().isdigit():
+                self.arr.append(int(entry.get().strip()))
+
+        self.root.destroy()
+        self.init_visualization()
+
+    def center_window(self, window, width, height):
+        screen_width = window.winfo_screenwidth()
+        screen_height = window.winfo_screenheight()
+
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+
+        window.geometry(f'{width}x{height}+{x}+{y}')
 
 if __name__ == "__main__":
-    main()
+    app = MergeSortVisualizer(array_type="custom")

@@ -1,17 +1,30 @@
+import tkinter as tk
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button
 
-class CountingSortVisualizer:
-    def __init__(self, on_back_callback=None):
-        self.arr = np.random.randint(1, 30, 7)  # Random array for visualization
-        self.interval = 1.0  # Default execution speed
-        self.paused = False  # Flag to track pause/resume
-        self.sorted = False  # Flag to track if array is sorted
-        self.fig, self.ax = plt.subplots()
-        self.text = self.fig.text(0.02, 0.02, "", fontsize=10, color="black")
-        self.on_back_callback = on_back_callback
 
+class CountingSortVisualizer:
+    def __init__(self, array_type="random", on_back_callback=None):
+        self.on_back_callback = on_back_callback
+        self.paused = False
+        self.sorted = False
+        self.fig, self.ax = plt.subplots()
+        self.fig.canvas.manager.window.state('zoomed')  # Maximize window
+        self.text = self.fig.text(0.02, 0.02, "", fontsize=10, color="black")
+        self.interval = 1.0  # Default execution speed
+
+        # Initialize button
+        self.init_back_button()
+
+        if array_type == "random":
+            self.arr = np.random.randint(1, 30, 7)  # Random array for visualization
+            self.init_visualization()
+        elif array_type == "custom":
+            self.arr = []
+            self.get_custom_array()
+
+    def init_visualization(self):
         self.ax.set_title('Initial Array')
         self.plot_bars()
 
@@ -22,16 +35,16 @@ class CountingSortVisualizer:
 
         # Connect events for speed selection and pause/resume
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
-        self.speed_choice = "Medium"  # Default speed (medium)
+        self.speed_choice = 2  # Default speed (medium)
 
         self.run_algorithm()
 
     def plot_bars(self):
         self.ax.clear()
         if self.sorted:
-            colors = ['green'] * len(self.arr)
+            colors = ['#4CAF50'] * len(self.arr)  # Green color for sorted state
         else:
-            colors = ['blue'] * len(self.arr)
+            colors = ['skyblue'] * len(self.arr)  # Default blue for initial state
         self.bars = self.ax.bar(range(len(self.arr)), self.arr, color=colors, align='center')
         for bar in self.bars:
             height = bar.get_height()
@@ -43,15 +56,15 @@ class CountingSortVisualizer:
 
     def on_key_press(self, event):
         if event.key == '1':
-            self.speed_choice = "Slow"
+            self.speed_choice = 1
             self.interval = 2.0
             self.update_speed_message("Speed set to: Slow")
         elif event.key == '2':
-            self.speed_choice = "Medium"
+            self.speed_choice = 2
             self.interval = 1.0
             self.update_speed_message("Speed set to: Medium")
         elif event.key == '3':
-            self.speed_choice = "Fast"
+            self.speed_choice = 3
             self.interval = 0.5
             self.update_speed_message("Speed set to: Fast")
         elif event.key == 'p':  # Change stop key to 'p' (pause)
@@ -59,7 +72,7 @@ class CountingSortVisualizer:
             self.update_speed_message("Paused. Press 'r' to resume.")
         elif event.key == 'r':
             self.paused = False
-            self.update_speed_message(f"Resumed. Current speed: {self.speed_choice}")
+            self.update_speed_message(f"Resumed. Current speed: Medium")
 
     def update_speed_message(self, message):
         self.speed_instructions.set_text(message)
@@ -124,14 +137,14 @@ class CountingSortVisualizer:
         self.plot_bars()
 
         if count is not None:
-            colors = ['yellow'] * len(self.arr)
+            colors = ['gold'] * len(self.arr)  # Yellow for counting phase
             for i in range(len(self.arr)):
                 if output is not None and self.arr[i] != output[i]:
-                    colors[i] = 'green'
+                    colors[i] = '#4CAF50'  # Green for placement phase
         else:
-            colors = ['blue'] * len(self.arr)
+            colors = ['skyblue'] * len(self.arr)
             if self.sorted:
-                colors = ['green'] * len(self.arr)
+                colors = ['#4CAF50'] * len(self.arr)
 
         for bar, color in zip(self.bars, colors):
             bar.set_color(color)
@@ -153,10 +166,8 @@ class CountingSortVisualizer:
         self.text.set_text(f'Sorted Array: {self.arr}')
         self.fig.canvas.draw()
 
-        # Add "Back to Main" button
-        back_button_ax = self.fig.add_axes([0.45, 0.01, 0.1, 0.06])  # Match padding from bucket sort
-        back_button = Button(back_button_ax, 'Back to Main Menu', color='#4CAF50', hovercolor='lightgreen')
-        back_button.on_clicked(self.on_back_clicked)
+        # Show "Back to Main" button
+        self.back_button.set_active(True)
 
         plt.show()
 
@@ -165,8 +176,78 @@ class CountingSortVisualizer:
         if self.on_back_callback:
             self.on_back_callback()
 
-def main(on_back_callback=None):
-    visualizer = CountingSortVisualizer(on_back_callback=on_back_callback)
+    def init_back_button(self):
+        # Initialize "Back to Main" button
+        self.back_button_ax = self.fig.add_axes([0.45, 0.01, 0.1, 0.06])  # Adjust position as needed
+        self.back_button = Button(self.back_button_ax, 'Back to Main Menu', color='#4CAF50', hovercolor='lightgreen')
+        self.back_button.on_clicked(self.on_back_clicked)
+
+
+    def get_custom_array(self):
+        self.root = tk.Tk()
+        self.root.title("Enter Custom Array")
+        self.root.configure(bg="#e0f7fa")
+
+        self.center_window(self.root, 400, 300)
+
+        container = tk.Frame(self.root, bg="#e0f7fa")
+        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        label = tk.Label(container, text="Enter the length of the array:", font=("Helvetica", 14), bg="#e0f7fa", fg="#00796b")
+        label.pack(pady=(10, 10))
+
+        self.array_length_entry = tk.Entry(container, font=("Helvetica", 14), justify='center')
+        self.array_length_entry.pack(pady=(0, 20))
+
+        submit_button = tk.Button(container, text="Submit", command=self.submit_length, font=("Helvetica", 14), bg="#00796b", fg="white", activebackground="#004d40", activeforeground="white", width=10, height=1, bd=0, highlightthickness=0)
+        submit_button.pack(pady=(0, 20))
+
+        self.root.mainloop()
+
+    def submit_length(self):
+        array_length = int(self.array_length_entry.get())
+        self.arr = []
+
+        self.root.destroy()
+        self.root = tk.Tk()
+        self.root.title("Enter Custom Array Elements")
+        self.root.configure(bg="#e0f7fa")
+
+        self.center_window(self.root, 400, 300)
+
+        container = tk.Frame(self.root, bg="#e0f7fa")
+        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        label = tk.Label(container, text="Enter the elements of the array:", font=("Helvetica", 14), bg="#e0f7fa", fg="#00796b")
+        label.pack(pady=(10, 10))
+
+        self.entries = []
+        for i in range(array_length):
+            entry = tk.Entry(container, font=("Helvetica", 14), justify='center')
+            entry.pack(pady=(0, 10))
+            self.entries.append(entry)
+
+        submit_button = tk.Button(container, text="Submit", command=self.submit_elements, font=("Helvetica", 14), bg="#00796b", fg="white", activebackground="#004d40", activeforeground="white", width=10, height=1, bd=0, highlightthickness=0)
+        submit_button.pack(pady=(0, 20))
+
+        self.root.mainloop()
+
+    def submit_elements(self):
+        self.arr = [int(entry.get()) for entry in self.entries]
+        self.root.destroy()
+        self.init_visualization()
+
+    def center_window(self, root, width, height):
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+        root.geometry(f"{width}x{height}+{x}+{y}")
+
+
+def main(array_type="random", on_back_callback=None):
+    visualizer = CountingSortVisualizer(array_type=array_type, on_back_callback=on_back_callback)
+
 
 if __name__ == "__main__":
     main()
