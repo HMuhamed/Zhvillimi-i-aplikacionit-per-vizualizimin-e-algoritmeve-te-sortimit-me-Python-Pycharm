@@ -13,13 +13,15 @@ class MergeSortVisualizer:
         self.interval = 1.0  # Default execution speed
 
         if array_type == "random":
-            self.arr = np.random.randint(1, 100, np.random.randint(1, 21))
+            self.original_array = np.random.randint(1, 100, np.random.randint(1, 21))
+            self.arr = self.original_array.copy()
             self.init_visualization()
         elif array_type == "custom":
             self.arr = []
             self.get_custom_array()
 
     def init_visualization(self):
+        self.ax.clear()  # Clear previous plot elements
         self.ax.set_title('Initial Array')
         self.plot_bars()
 
@@ -32,8 +34,13 @@ class MergeSortVisualizer:
         self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.speed_choice = 2  # Default speed (medium)
 
+        # Add "Restart" button
+        restart_button_ax = self.fig.add_axes([0.4, 0.001, 0.1, 0.06])  # Adjusted position and size
+        self.restart_button = Button(restart_button_ax, 'Restart', color='#4CAF50', hovercolor='lightgreen')
+        self.restart_button.on_clicked(self.on_restart_clicked)
+
         # Add "Back to Main Menu" button
-        back_button_ax = self.fig.add_axes([0.45, 0.01, 0.1, 0.06])  # Match padding from other visualizations
+        back_button_ax = self.fig.add_axes([0.52, 0.001, 0.1, 0.06])  # Adjusted position and size
         self.back_button = Button(back_button_ax, 'Back to Main Menu', color='#4CAF50', hovercolor='lightgreen')
         self.back_button.on_clicked(self.on_back_clicked)
 
@@ -147,6 +154,9 @@ class MergeSortVisualizer:
         for bar, color in zip(self.bars, colors):
             bar.set_color(color)
 
+        self.ax.set_title('')  # Clear previous title
+        self.text.set_text('')  # Clear previous text
+        self.speed_instructions.set_text('')  # Clear speed selection instructions
         if l is not None and r is not None:
             if merged:
                 self.ax.set_title(f'Merged subarrays: {self.arr[l:r + 1]}')
@@ -173,6 +183,12 @@ class MergeSortVisualizer:
         if self.on_back_callback:
             self.on_back_callback()
 
+    def on_restart_clicked(self, event):
+        plt.close(self.fig)
+        self.fig, self.ax = plt.subplots()
+        self.fig.canvas.manager.window.state('zoomed')  # Maximize window
+        self.init_visualization()  # Restart the visualization with the same array
+
     def get_custom_array(self):
         self.root = tk.Tk()
         self.root.title("Enter Custom Array")
@@ -196,7 +212,8 @@ class MergeSortVisualizer:
 
     def submit_length(self):
         array_length = int(self.array_length_entry.get())
-        self.arr = []
+        self.original_array = np.random.randint(1, 100, array_length)
+        self.arr = self.original_array.copy()
 
         self.root.destroy()
         self.root = tk.Tk()
@@ -208,27 +225,33 @@ class MergeSortVisualizer:
         container = tk.Frame(self.root, bg="#e0f7fa")
         container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        label = tk.Label(container, text="Enter the elements of the array:", font=("Helvetica", 14), bg="#e0f7fa", fg="#00796b")
-        label.pack(pady=(10, 10))
-
         self.entries = []
-        for i in range(array_length):
-            entry = tk.Entry(container, font=("Helvetica", 14), justify='center')
-            entry.pack(pady=(10, 10))  # Centered padding
-            self.entries.append(entry)
+        self.current_index = 0
 
-        submit_button = tk.Button(container, text="Submit", command=self.submit_elements, font=("Helvetica", 14), bg="#00796b", fg="white", activebackground="#004d40", activeforeground="white", width=10, height=1, bd=0, highlightthickness=0)
+        self.label = tk.Label(container, text=f"Enter element {self.current_index + 1}:", font=("Helvetica", 14), bg="#e0f7fa", fg="#00796b")
+        self.label.pack(pady=(10, 10))
+
+        self.entry = tk.Entry(container, font=("Helvetica", 14), justify='center')
+        self.entry.pack(pady=(0, 20))  # Centered padding
+
+        submit_button = tk.Button(container, text="Next", command=self.submit_element, font=("Helvetica", 14), bg="#00796b", fg="white", activebackground="#004d40", activeforeground="white", width=10, height=1, bd=0, highlightthickness=0)
         submit_button.pack(pady=(20, 0))
 
         self.root.mainloop()
 
-    def submit_elements(self):
-        for entry in self.entries:
-            if entry.get().strip().isdigit():
-                self.arr.append(int(entry.get().strip()))
+    def submit_element(self):
+        element_value = self.entry.get().strip()
+        if element_value.isdigit():
+            self.original_array[self.current_index] = int(element_value)
+            self.arr[self.current_index] = int(element_value)
+            self.current_index += 1
 
-        self.root.destroy()
-        self.init_visualization()
+        if self.current_index < len(self.arr):
+            self.label.config(text=f"Enter element {self.current_index + 1}:")
+            self.entry.delete(0, tk.END)  # Clear the entry for the next element
+        else:
+            self.root.destroy()
+            self.init_visualization()
 
     def center_window(self, window, width, height):
         screen_width = window.winfo_screenwidth()
